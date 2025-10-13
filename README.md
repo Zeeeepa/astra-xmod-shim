@@ -22,10 +22,15 @@
 </div>
 
 # Astron-xmod-shim
+
 轻量级、声明式的 AI 服务管控中间件
 
 ## 项目概述
-Astron-xmod-shim 是一个 Goal 驱动的声明式 AI 服务管控中间件：它将用户声明的 DeploySpec 编排为可验证、幂等的 GoalSet——开箱支持 LLM 部署等标准场景，也允许第三方扩展任意自定义 GoalSet；每个 Goal 的具体执行由 Shimlet 插件对接底层运行时（如 Kubernetes、Docker），通过统一的收敛引擎实现跨环境可靠交付。
+
+Astron-xmod-shim 是一个 Goal 驱动的声明式 AI 服务管控中间件：它将用户声明的 DeploySpec 编排为可验证、幂等的 GoalSet——开箱支持
+LLM 部署等标准场景，也允许第三方扩展任意自定义 GoalSet；每个 Goal 的具体执行由 Shimlet 插件对接底层运行时（如
+Kubernetes、Docker），通过统一的收敛引擎实现跨环境可靠交付。
+
 ## 🌟 核心设计理念：从意图到最终一致
 
 Astron-xmod-shim 的设计围绕一个核心思想：**部署即收敛到一组明确目标（Goals）**。  
@@ -51,17 +56,11 @@ Astron-xmod-shim 的设计围绕一个核心思想：**部署即收敛到一组�
 - **轻量单体架构**  
   单二进制交付，无外部依赖，适用于边缘、本地及云原生等多种部署场景。
 
-
-  
-
-
-
 ## 🏗️ 技术架构
 
 Astron-xmod-shim 采用“核心引擎 + 双插件”的解耦架构，通过抽象层与流程引擎分离关注点，实现高可扩展性与环境无关性。
 
 ![架构示意图](img3.png)
-
 
 ## 快速开始
 
