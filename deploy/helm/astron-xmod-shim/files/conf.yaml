@@ -40,7 +40,7 @@ current-shimlet: "k8s"
 # shimlet 配置
 shimlets:
   k8s:
-    config-path: "/opt/astron-xmod-shim/conf/shimlets/k8s-shimlet.yaml"   # 👈 指向插件配置
+    config-path: "./conf/k8s-shimlet.yaml"   # 👈 指向插件配置
   docker:
     config-path: "./conf/docker/docker-shimlet.yaml"
   shimmy:

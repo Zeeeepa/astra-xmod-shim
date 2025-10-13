@@ -25,8 +25,7 @@
 轻量级、声明式的 AI 服务管控中间件
 
 ## 项目概述
-Astron-xmod-shim 是一款轻量级、声明式的 AI 服务管控中间件，它让用户通过 DeploySpec 声明期望状态，系统则围绕一组明确目标（Goals） 实现可靠收敛——目标可以是“模型存在”“服务就绪”“通过安全校验”等任意可验证状态。这些目标由 GoalSet 组织：系统内置常用模板（如 llm-deploy、llm-delete），开箱即用；也支持第三方自定义，灵活扩展部署语义。目标的具体执行通过 Shimlet 插件对接底层环境（如 Kubernetes、Docker），你专注定义“应该是什么样”，系统负责“在哪变成那样”。
-
+Astron-xmod-shim 是一个 Goal 驱动的声明式 AI 服务管控中间件：它将用户声明的 DeploySpec 编排为可验证、幂等的 GoalSet——开箱支持 LLM 部署等标准场景，也允许第三方扩展任意自定义 GoalSet；每个 Goal 的具体执行由 Shimlet 插件对接底层运行时（如 Kubernetes、Docker），通过统一的收敛引擎实现跨环境可靠交付。
 ## 🌟 核心设计理念：从意图到最终一致
 
 Astron-xmod-shim 的设计围绕一个核心思想：**部署即收敛到一组明确目标（Goals）**。  

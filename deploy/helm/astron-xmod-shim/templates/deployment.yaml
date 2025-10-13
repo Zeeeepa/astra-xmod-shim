@@ -23,8 +23,7 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"  # Changed to use AppVersion instead of Chart.Version
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["./astron-xmod-shim"]  # Added command to use bash shell
-          args: ["-c", "/app/conf/conf.yaml"]  # Added args to keep container running
+          command: ["./astron-xmod-shim", "-c", "/app/conf/conf.yaml"]
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

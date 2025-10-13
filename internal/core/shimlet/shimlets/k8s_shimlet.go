@@ -343,7 +343,28 @@ func (k *K8sShimlet) Status(resourceId string) (*dto.RuntimeStatus, error) {
 	case deployment.Status.Replicas == 0:
 		phase = dto.PhaseTerminating
 	case deployment.Status.UnavailableReplicas > 0:
-		phase = dto.PhaseFailed
+		// 先检查是否有Pod处于Pending状态
+		hasPendingPods := false
+		
+		// 列出该Deployment的所有Pod
+		podListOptions := metav1.ListOptions{
+			LabelSelector: labels.Set{"app": resourceId}.AsSelector().String(),
+		}
+		pods, err := k.client.GetClientSet().CoreV1().Pods("default").List(context.Background(), podListOptions)
+		if err == nil {
+			for _, pod := range pods.Items {
+				if pod.Status.Phase == corev1.PodPending {
+					hasPendingPods = true
+					break
+				}
+			}
+		}
+		
+		if hasPendingPods {
+			phase = dto.PhasePending
+		} else {
+			phase = dto.PhaseFailed
+		}
 	case deployment.Status.AvailableReplicas == deployment.Status.Replicas:
 		phase = dto.PhaseRunning
 	default:
