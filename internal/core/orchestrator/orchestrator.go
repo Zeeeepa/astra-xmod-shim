@@ -13,11 +13,15 @@ import (
 	"fmt"
 )
 
+// CurrentShimletGetter 定义获取当前shimlet ID的函数类型
+type CurrentShimletGetter func() string
+
 type Orchestrator struct {
-	shimReg    *typereg.TypeReg[shimlet.Shimlet]
-	goalSetReg map[string]*goal.GoalSet
-	specStore  spec.Store
-	queue      *workqueue.Queue
+	shimReg             *typereg.TypeReg[shimlet.Shimlet]
+	goalSetReg          map[string]*goal.GoalSet
+	specStore           spec.Store
+	queue               *workqueue.Queue
+	currentShimletGetter CurrentShimletGetter
 }
 
 func NewOrchestrator(
@@ -27,10 +31,31 @@ func NewOrchestrator(
 	specStore spec.Store,
 ) *Orchestrator {
 	return &Orchestrator{
-		queue:      queue,
-		shimReg:    shimReg,
-		goalSetReg: pipeReg,
-		specStore:  specStore,
+		queue:               queue,
+		shimReg:             shimReg,
+		goalSetReg:          pipeReg,
+		specStore:           specStore,
+		currentShimletGetter: func() string {
+			return config.Get().CurrentShimlet
+		},
+	}
+}
+
+// NewOrchestratorWithShimletGetter 创建一个可以自定义currentShimletGetter的Orchestrator实例
+// 主要用于测试
+func NewOrchestratorWithShimletGetter(
+	shimReg *typereg.TypeReg[shimlet.Shimlet],
+	pipeReg map[string]*goal.GoalSet,
+	queue *workqueue.Queue,
+	specStore spec.Store,
+	currentShimletGetter CurrentShimletGetter,
+) *Orchestrator {
+	return &Orchestrator{
+		queue:               queue,
+		shimReg:             shimReg,
+		goalSetReg:          pipeReg,
+		specStore:           specStore,
+		currentShimletGetter: currentShimletGetter,
 	}
 }
 
@@ -46,7 +71,7 @@ func (o *Orchestrator) Provision(spec *dto.RequirementSpec) error {
 
 	// RequirementSpec 持久化 部署期望
 	spec.ReplicaCount = 1
-	spec.ShimletName = config.Get().CurrentShimlet
+	spec.ShimletName = o.currentShimletGetter()
 	// 如果这里是更新, 则需要 对应goalset reconcile 检测到 不一致 并调用ensure 闭环
 	o.specStore.Set(spec.ServiceId, spec)
 
@@ -59,7 +84,7 @@ func (o *Orchestrator) Provision(spec *dto.RequirementSpec) error {
 // DeleteService 删除指定的模型服务
 func (o *Orchestrator) DeleteService(serviceID string) error {
 	// 获取当前使用的shimlet
-	currentShimletId := config.Get().CurrentShimlet
+	currentShimletId := o.currentShimletGetter()
 	runtimeShimlet, err := o.shimReg.GetSingleton(currentShimletId)
 	if err != nil {
 		log.Error("get runtime shimlet error", err)
@@ -82,7 +107,7 @@ func (o *Orchestrator) GetServiceStatus(serviceID string) (*dto.RuntimeStatus, e
 		return nil, fmt.Errorf("serviceID is required")
 	}
 
-	currentShimletId := config.Get().CurrentShimlet
+	currentShimletId := o.currentShimletGetter()
 	runtimeShimlet, err := o.shimReg.GetSingleton(currentShimletId)
 	if err != nil {
 		return nil, err
