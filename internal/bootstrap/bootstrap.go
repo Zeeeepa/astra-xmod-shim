@@ -29,16 +29,16 @@ func Init(configPath string) error {
 	shimReg := shimlet.Registry
 	pipeReg := goal.Registry
 
-	//  init specStore
-	specStore := spec.NewMemoryStore()
+	// 在bootstrap阶段初始化客户端
 
 	// init reconciler
 	workerNum := 5
 	workQueue := workqueue.New()
+	//  init specStore - 替换MemoryStore为EtcdStore
+	//specStore := spec.NewEtcdStore()
+	specStore := spec.NewMemoryStore()
 
-	reconciler := reconciler.NewReconciler(specStore, workerNum, workQueue)
-
-	//  init workqueue
+	rc := reconciler.NewReconciler(specStore, workerNum, workQueue)
 
 	// 初始化全局Tracer单例
 	infraShim, _ := shimReg.GetSingleton(cfg.CurrentShimlet)
@@ -50,7 +50,9 @@ func Init(configPath string) error {
 	orchestrator.GlobalOrchestrator = orchestrator.NewOrchestrator(shimReg, pipeReg, workQueue, specStore)
 
 	// start reconciler
-	reconciler.Start()
+	rc.Start()
+
+	specStore.ReloadAll(workQueue)
 
 	// 6. 初始化 HTTP Server
 	if err := server.Init(); err != nil {

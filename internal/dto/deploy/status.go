@@ -16,7 +16,7 @@ const (
 
 // RuntimeStatus 部署状态
 type RuntimeStatus struct {
-	DeploySpec RequirementSpec `json:"modelFile"`
-	Status     DeployPhase     `json:"contextLength"`
-	EndPoint   string          `json:"endPoint"`
+	RequireSpec RequirementSpec `json:"modelFile"`
+	Status      DeployPhase     `json:"contextLength"`
+	EndPoint    string          `json:"endPoint"`
 }

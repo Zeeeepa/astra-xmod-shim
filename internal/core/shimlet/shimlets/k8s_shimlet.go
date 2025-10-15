@@ -329,8 +329,8 @@ func (k *K8sShimlet) Status(resourceId string) (*dto.RuntimeStatus, error) {
 	// If no deployments found, return terminated status
 	if len(deployments) == 0 {
 		return &dto.RuntimeStatus{
-			DeploySpec: dto.RequirementSpec{ServiceId: resourceId},
-			Status:     dto.PhaseUnknown,
+			RequireSpec: dto.RequirementSpec{ServiceId: resourceId},
+			Status:      dto.PhaseUnknown,
 		}, nil
 	}
 
@@ -345,7 +345,7 @@ func (k *K8sShimlet) Status(resourceId string) (*dto.RuntimeStatus, error) {
 	case deployment.Status.UnavailableReplicas > 0:
 		// 先检查是否有Pod处于Pending状态
 		hasPendingPods := false
-		
+
 		// 列出该Deployment的所有Pod
 		podListOptions := metav1.ListOptions{
 			LabelSelector: labels.Set{"app": resourceId}.AsSelector().String(),
@@ -359,7 +359,7 @@ func (k *K8sShimlet) Status(resourceId string) (*dto.RuntimeStatus, error) {
 				}
 			}
 		}
-		
+
 		if hasPendingPods {
 			phase = dto.PhasePending
 		} else {
@@ -505,9 +505,9 @@ func (k *K8sShimlet) Status(resourceId string) (*dto.RuntimeStatus, error) {
 	}
 
 	return &dto.RuntimeStatus{
-		DeploySpec: spec,
-		Status:     phase,
-		EndPoint:   endpoint, // ✅ 返回 endpoint
+		RequireSpec: spec,
+		Status:      phase,
+		EndPoint:    endpoint, // ✅ 返回 endpoint
 	}, nil
 }
 

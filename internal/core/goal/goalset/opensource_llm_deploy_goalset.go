@@ -78,7 +78,7 @@ var specConsistencyCheck = goal.Goal{
 		// 比较期望的spec和实际的spec是否一致
 		// 这里我们主要比较关键字段：ModelName, ModelFileDir, ResourceRequirements, ReplicaCount
 		expectedSpec := ctx.DeploySpec
-		actualSpec := status.DeploySpec
+		actualSpec := status.RequireSpec
 
 		// 比较关键字段
 		if expectedSpec.ModelName != actualSpec.ModelName ||
@@ -114,7 +114,7 @@ var deployFinished = goal.Goal{Name: "deployFinish",
 	}}
 
 var serviceExposed = goal.
-	Goal{Name: "exposeService",
+Goal{Name: "exposeService",
 	IsAchieved: func(ctx *goal.Context) bool {
 		return ctx.DeploySpec.ServiceId != ""
 	},
@@ -133,7 +133,7 @@ func NewLLMDeployGoalSet() {
 		AddGoal(deployFinished).
 		AddGoal(specConsistencyCheck). // 添加spec一致性检查Goal
 		AddGoal(serviceExposed).
-		WithMaxRetries(10).           // 失败最多重试 10 次
+		WithMaxRetries(10). // 失败最多重试 10 次
 		WithTimeout(5 * time.Minute). // 整体超时 5 分钟
 		BuildAndRegister()
 }
