@@ -1,56 +1,130 @@
-# Astra-xmod-shim
+<div align="center">
+<img src="xmod-shim.svg?v=2" alt="Astron-xmod-shim Logo" width="600" />
+<br>
 
-A lightweight middleware for unified AI model serving orchestration.
+[![License](https://img.shields.io/github/license/iflytek/Astron-xmod-shim)](https://github.com/iflytek/Astron-xmod-shim/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/iflytek/Astron-xmod-shim?include_prereleases)](https://github.com/iflytek/Astron-xmod-shim/releases)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/iflytek/Astron-xmod-shim/ci.yml?branch=main)](https://github.com/iflytek/Astron-xmod-shim/actions)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/iflytek/Astron-xmod-shim)](https://github.com/iflytek/Astron-xmod-shim/blob/main/go.mod)
+[![Coverage](https://img.shields.io/codecov/c/github/iflytek/Astron-xmod-shim)](https://codecov.io/gh/iflytek/Astron-xmod-shim)
+[![Multi-Arch](https://img.shields.io/badge/Multi--Arch-linux%2Famd64%20%7C%20linux%2Farm64-blue?logo=docker)]()
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Native-blue?logo=kubernetes&logoColor=white)](docs/k8s.md)
+[![Helm](https://img.shields.io/badge/Helm-Chart-blue?logo=helm&logoColor=white)](charts/)
+[![Cloud Native](https://img.shields.io/badge/Cloud-Native-blue?logo=cloudnative&logoColor=white)](https://cncf.io)
+[![Metrics](https://img.shields.io/badge/Metrics-Prometheus-green?logo=prometheus)](docs/metrics.md)
+[![Contributors](https://img.shields.io/github/contributors/iflytek/Astron-xmod-shim)](https://github.com/iflytek/Astron-xmod-shim/graphs/contributors)
+[![Stars](https://img.shields.io/github/stars/iflytek/Astron-xmod-shim?style=social)](https://github.com/iflytek/Astron-xmod-shim)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-## Overview
+<span style="font-size:0.9em; color:#586375;">**Language**: **English** | [简体中文](README.md)</span>
+</div>
 
-Astra-xmod-shim decouples *where* a model runs from *how* it is deployed. It uses **Shimlets** to abstract runtime environments and **Pipelines** to define deployment workflows—enabling consistent management across platforms.
+# Astron-xmod-shim
 
-Designed for extensibility and minimal footprint, it runs as a single binary with no external dependencies.
+A lightweight, declarative middleware for AI service orchestration.
 
----
+## Project Overview
 
-## Architecture
-![架构示意图](img2.png)
+**Astron-xmod-shim** is a **goal-driven**, declarative middleware for managing AI services. It translates user-declared `DeploySpec` into verifiable and idempotent `GoalSet`s—supporting standard scenarios like LLM deployment out-of-the-box, while also enabling third-party extensions for custom `GoalSet`s. Each `Goal` is executed by a **Shimlet** plugin that interfaces with underlying runtimes (e.g., Kubernetes, Docker), ensuring reliable delivery across environments through a unified convergence engine.
 
-- **Core Engine**: Manages service lifecycle via a finite state machine (FSM), handles API requests, and coordinates plugins.
-- **Shimlet**: Adapts to runtime environments (e.g., Kubernetes, Docker) through a plugin interface.
-- **Pipeline**: Composes deployment logic as a chain of function steps.
-- **EventBus**: Decouples core operations from observability and extension systems.
+## 🌟 Core Design Philosophy: From Intent to Eventual Consistency
 
-```
-  API/CLI
-    │
-    ▼
-  Core Engine (FSM)
-    ├─▶ Shimlet (Runtime)
-    ├─▶ Pipeline (Workflow)
-    └─▶ EventBus → Logging, Monitoring, etc.
-```
+Astron-xmod-shim is built around one core idea: **deployment is convergence toward a set of explicit goals**.  
+The system does **not** dictate *what to check*, but rather *how to reliably converge to your defined goals*.
 
----
+- **Deployment Intent: `DeploySpec` (User-facing)**  
+  Users declare *what they want* via `DeploySpec`, for example:
+  > “Deploy a model service named `qwen-test` with 1 replica, using 1 NVIDIA GPU, and model `qwen3-1.5b`.”  
+  `DeploySpec` is purely intent-based—free of implementation details or environment binding—ensuring a clean, platform-agnostic interface.
+
+- **`Goal`, `GoalSet`, and Execution Engine**
+    1. A **`Goal`** represents a specific system target or convergence step (e.g., “model file exists”) and includes:
+        - `IsAchieved()`: checks if the goal is already met;
+        - `Ensure()`: performs an idempotent action to achieve the goal if not.
+    2. A **`GoalSet`** is an ordered collection of `Goal`s representing the convergence path for a deployment scenario (e.g., LLM rollout, service teardown). It is fully extensible by third parties.
+    3. The **execution engine** consists of a **`WorkQueue` + `reconcile loop`**:
+        - `WorkQueue` provides reliable task scheduling (deduplication, rate-limited retries, backpressure);
+        - `reconcile loop` continuously processes tasks, converging each `Goal` until system state matches intent.
+
+- **`Shimlet` (Runtime Adapter Plugin)**  
+  A `Shimlet` implements the `shim.Runtime` interface, abstracting environment-specific operations (e.g., Kubernetes, Docker). This decouples the core engine from runtime details, enabling seamless multi-environment support.
+
+- **Lightweight Monolithic Architecture**  
+  Delivered as a single binary with no external dependencies—ideal for edge, local, and cloud-native deployments.
+
+## 🏗️ Technical Architecture
+
+Astron-xmod-shim adopts a **“core engine + dual plugin”** architecture, separating concerns through abstraction layers and a workflow engine for high extensibility and runtime agnosticism.
+
+[Architecture Diagram](xmod-shim.diagram.svg)
 
 ## Quick Start
 
-```bash
-# Download and run
-wget https://github.com/iflytek/astron-xmod-shim/releases/latest/download/model-serve-shim
-chmod +x model-serve-shim
+### Prerequisites
 
-./model-serve-shim \
-  --port=8080 \
-  --shimlet=k8s \
-  --pipeline=opensourcellm
+- Go 1.24+ (for development)
+- Target runtime (e.g., Kubernetes v1.19+, if using the K8s Shimlet)
+
+### Helm Deployment (Kubernetes)
+
+Astron-xmod-shim provides a Helm Chart for Kubernetes deployment.
+
+#### Requirements
+
+- Helm 3.x installed
+- `kubectl` configured to access your target Kubernetes cluster
+- Host directories for config and models already exist
+
+#### Deployment Commands
+
+```bash
+# Navigate to Helm chart directory
+cd deploy/helm
+
+# Install or upgrade
+helm upgrade --install astron-xmod-shim astron-xmod-shim/ -f astron-xmod-shim/values.yaml
+
+# Verify deployment
+kubectl get pods -l app.kubernetes.io/name=astron-xmod-shim
 ```
 
-## API Example
+#### Helm Chart Features
 
-Deploy a model:
+- Runs in host network mode
+- Mounts config directory to `/app/conf` in the container
+- Mounts host model directory `/mnt/maasmodels/` to the same path in the container
+- Supports mounting K8s Shimlet config files
+
+#### Custom Configuration
+
+To override defaults:
+
+1. **Edit `values.yaml` directly**
+   ```bash
+   vi deploy/helm/astron-xmod-shim/values.yaml
+   ```
+
+2. **Use a custom values file**
+   ```bash
+   helm upgrade --install astron-xmod-shim deploy/helm/astron-xmod-shim/ -f your-custom-values.yaml
+   ```
+
+#### Uninstall
+
+```bash
+helm uninstall astron-xmod-shim
+```
+
+## API Reference
+
+### Deploy a Model Service
+
 ```bash
 curl -X POST http://localhost:8080/api/v1/modserv/deploy \
   -H "Content-Type: application/json" \
   -d '{
-    "modelName": "qwen",
+    "modelName": "example-model",
+    "modelFile": "/path/to/model",
     "resourceRequirements": {
       "acceleratorType": "NVIDIA GPU",
       "acceleratorCount": 1,
@@ -61,150 +135,269 @@ curl -X POST http://localhost:8080/api/v1/modserv/deploy \
   }'
 ```
 
-Check status:
+### Query Service Status
+
 ```bash
 curl http://localhost:8080/api/v1/modserv/{serviceId}
 ```
 
----
+### List Loaded Plugins
 
-## Example: OpenSourceLLM Pipeline
+```bash
+curl http://localhost:8080/api/v1/plugins
+```
 
-A built-in pipeline for deploying open-source LLMs. Uses a builder pattern to define ordered steps.
+## Plugin Development Guide
+
+### Shimlet Development (Runtime Adapter)
+
+A Shimlet translates abstract deployment requests into concrete runtime operations. Below is an example of a custom Shimlet for Docker.
+
+#### Built-in Example: Kubernetes Shimlet
+
+Astron-xmod-shim includes a native Kubernetes Shimlet that maps deployment specs to Kubernetes resources (e.g., Deployments, Services).
+
+#### Extension Example: Docker Shimlet
+
+The following demonstrates how to implement a Docker Shimlet to deploy model services in Docker containers.
+
+##### Step 1: Implement the Shimlet Interface
 
 ```go
-// mypipeline/mypipeline.go
-package mypipeline
+package dockershimlet
 
 import (
-  "astron-xmod-shim/internal/core/pipeline"
-  "astron-xmod-shim/pkg/log"
+	"astron-xmod-shim/internal/core/shimlet"
+	dto "astron-xmod-shim/internal/dto/deploy"
+	"astron-xmod-shim/pkg/log"
+	// Import Docker SDK packages as needed
+	// "github.com/docker/docker/client"
 )
 
-func validate(ctx *pipeline.Context) error {
-  log.Info("Validating model: %s", ctx.DeploySpec.ModelName)
-  // Add model path, format checks
-  return nil
+// DockerShimlet implements the Docker runtime adapter
+type DockerShimlet struct {
+	// Add Docker client or other fields as needed
+	// client *client.Client
 }
 
-func generateConfig(ctx *pipeline.Context) error {
-  log.Info("Generating runtime config")
-  // Set up inference server args, env vars
-  return nil
+// Compile-time interface check
+var _ shimlet.Shimlet = (*DockerShimlet)(nil)
+
+func (d *DockerShimlet) InitWithConfig(confPath string) error {
+	log.Info("Initializing Docker shimlet with config: %s", confPath)
+	// Initialize Docker client, parse config, validate connection
+	return nil
 }
 
-func exposeService(ctx *pipeline.Context) error {
-  log.Info("Exposing service endpoint")
-  // Create service ingress/route
-  return nil
+func (d *DockerShimlet) Apply(spec *dto.RequirementSpec) error {
+	log.Info("Applying deployment spec to Docker: %s", spec.ModelName)
+	// Create or update Docker container based on spec
+	return nil
 }
 
-// Register the pipeline
-func init() {
-  pipeline.New("opensourcellm").
-    Step(validate).
-    Step(generateConfig).
-    Step(exposeService).
-    BuildAndRegister()
+func (d *DockerShimlet) Delete(resourceID string) error {
+	log.Info("Deleting Docker resource: %s", resourceID)
+	// Stop and remove container
+	return nil
+}
+
+func (d *DockerShimlet) Status(resourceID string) (*dto.RuntimeStatus, error) {
+	log.Info("Getting status for Docker resource: %s", resourceID)
+	// Query container status and return RuntimeStatus
+	return &dto.RuntimeStatus{}, nil
+}
+
+func (d *DockerShimlet) ID() string {
+	return "docker"
+}
+
+func (d *DockerShimlet) Description() string {
+	return "Docker runtime adapter for deploying model services in containers"
+}
+
+func (d *DockerShimlet) ListDeployedServices() ([]string, error) {
+	log.Info("Listing all deployed services in Docker")
+	// Return list of service IDs (container names or labels)
+	return []string{}, nil
 }
 ```
 
-> This pipeline can be selected at startup: `--pipeline=opensourcellm`.
-
----
-
-## Example: Kubernetes Shimlet
-
-A built-in runtime adapter that deploys models on Kubernetes using native APIs.
+##### Step 2: Register the Shimlet
 
 ```go
-// k8s/shimlet.go
-package k8s
+package dockershimlet
 
-import (
-  "astron-xmod-shim/internal/core/deploy"
-  metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
+import "astron-xmod-shim/internal/core/shimlet"
 
-type K8sShimlet struct {
-  client *kubernetes.Clientset
-}
-
-func (k *K8sShimlet) Create(ctx *deploy.Context) (string, error) {
-  // Convert deploy spec to Kubernetes Deployment + Service
-  deployment := &appsv1.Deployment{
-    ObjectMeta: metav1.ObjectMeta{Name: ctx.ServiceID},
-    // ... setup containers, resources, replicas
-  }
-  _, err := k.client.AppsV1().Deployments("default").Create(context.TODO(), deployment, metav1.CreateOptions{})
-  if err != nil {
-    return "", err
-  }
-  return ctx.ServiceID, nil
-}
-
-func (k *K8sShimlet) Status(resourceID string) (deploy.Status, error) {
-  // Query pod status, return Running/Failed/Pending
-  pods, err := k.client.CoreV1().Pods("default").List(context.TODO(), metav1.ListOptions{
-    LabelSelector: "service-id=" + resourceID,
-  })
-  // Analyze pod states
-  return deploy.StatusRunning, nil
-}
-
-func (k *K8sShimlet) Delete(resourceID string) error {
-  // Delete deployment and service
-  return k.client.AppsV1().Deployments("default").Delete(context.TODO(), resourceID, metav1.DeleteOptions{})
-}
-
-// Register at init
 func init() {
-  plugin.RegisterShimlet("k8s", &K8sShimlet{client: getK8sClient()})
+	shimlet.Registry.AutoRegister(&DockerShimlet{})
 }
 ```
 
-> Enabled via: `--shimlet=k8s`.
+### Predefined GoalSets
 
----
+GoalSets define the convergence logic for deployments. Astron-xmod-shim uses a **Builder pattern** for GoalSet construction.
 
-## Extensibility
+#### Built-in Example: OpenSourceLLM GoalSet
 
-### Custom Use Cases
+This built-in GoalSet handles open-source LLM deployment, including model path mapping, deployment validation, spec consistency checks, and service exposure.
 
-- **Edge Pipeline**: Add model quantization, offline support, and resource throttling.
-- **Multimodal Pipeline**: Extend validation for image/text inputs and GPU memory tuning.
-- **Enterprise Pipeline**: Inject auth, encryption, and audit logging.
-- **Docker Shimlet**: Target container runtimes without Kubernetes.
+##### Step 1: Define Goals
 
-Plugins are compiled into the binary via Go’s `init()` registration mechanism.
+```go
+package mygoalset
 
----
+import (
+	"astron-xmod-shim/internal/core/goal"
+	"astron-xmod-shim/pkg/log"
+)
+
+var validateModel = goal.Goal{
+	Name: "validate-model",
+	IsAchieved: func(ctx *goal.Context) bool {
+		return ctx.DeploySpec.ModelName != ""
+	},
+	Ensure: func(ctx *goal.Context) error {
+		log.Info("Validating model: %s", ctx.DeploySpec.ModelName)
+		return nil
+	},
+}
+
+var prepareResources = goal.Goal{
+	Name: "prepare-resources",
+	IsAchieved: func(ctx *goal.Context) bool {
+		resourceReady, exists := ctx.Get("resourceReady").(bool)
+		return exists && resourceReady
+	},
+	Ensure: func(ctx *goal.Context) error {
+		log.Info("Preparing deployment resources")
+		ctx.Set("resourceReady", true)
+		return nil
+	},
+}
+```
+
+##### Step 2: Create and Register GoalSet
+
+```go
+package mygoalset
+
+import (
+	"astron-xmod-shim/internal/core/goal"
+	"time"
+)
+
+func init() {
+	newMyGoalSet()
+}
+
+func newMyGoalSet() {
+	goal.NewGoalSetBuilder("my-goalset").
+		AddGoal(validateModel).
+		AddGoal(prepareResources).
+		WithMaxRetries(3).
+		WithTimeout(2 * time.Minute).
+		BuildAndRegister()
+}
+```
+
+### Extension Examples
+
+- **Multimodal Model GoalSet**: Add validation for text+image inputs, optimize GPU allocation, set inference parameters.
+- **Edge Deployment GoalSet**: Enforce resource limits, apply model quantization, enable offline inference.
+- **Enterprise Security GoalSet**: Integrate auth, encrypted transport, and access control.
+
+### Plugin Integration
+
+Astron-xmod-shim uses Go’s `init()` registration mechanism—**not** dynamic loading or shared libraries.
+
+#### Built-in Plugins
+
+Registered automatically in `init()`:
+```go
+func init() {
+	shimlet.Registry.AutoRegister(&K8sShimlet{})
+}
+```
+
+#### Custom Plugins
+
+1. Implement the standard interface (`Shimlet` or `GoalSet`)
+2. Auto-register in `init()`
+3. Recompile the binary with your plugin code included
+
+#### Plugin Selection & Configuration
+
+Specify plugins via CLI or config:
+
+```bash
+./model-serve-shim --shimlet=k8s --goalset=opensource-llm-deploy
+```
+
+Or in `config.yaml`:
+```yaml
+plugins:
+  defaultShimlet: k8s
+  defaultGoalSet: opensource-llm-deploy
+```
 
 ## Configuration
 
-Via flags:
+### Command-Line Flags
+
 ```bash
---port=8080 --shimlet=k8s --pipeline=opensourcellm --log-level=info
+./model-serve-shim --help
+
+Usage:
+  --port int              HTTP server port (default: 8080)
+  --config string         Path to config file
+  --shimlet string        Default shimlet plugin
+  --goalset string        Default goalset plugin
+  --plugin-dir string     Plugin directory (unused in static build)
+  --log-level string      Log level: debug, info, warn, error (default: "info")
 ```
 
-Or YAML:
+### Config File (YAML)
+
 ```yaml
+# config.yaml
 service:
   port: 8080
+  readTimeout: 30s
+  writeTimeout: 30s
+
 plugins:
   defaultShimlet: k8s
-  defaultPipeline: opensourcellm
+  defaultGoalSet: opensource-llm-deploy
+
 logging:
   level: info
+  format: text
+  output: stdout
 ```
 
----
+## Contributing
+
+We welcome community contributions! Please follow these steps:
+
+1. Fork the repo and create a feature branch
+2. Adhere to coding standards (use `pre-commit` hooks)
+3. Ensure all tests pass before submitting
+4. Open a PR with a clear description of changes and issues resolved
+
+## 🌟 Star History
+
+<div align="center">
+  <img src="https://api.star-history.com/svg?repos=iflytek/Astron-xmod-shim&type=Date" alt="Star History Chart" width="600">
+</div>
 
 ## License
 
-Apache License 2.0
+Astron-xmod-shim is licensed under the **Apache License 2.0**.
 
-## Contact
+## Contact Us
 
-- Issues: [GitHub Issues](https://github.com/iflytek/astron-xmod-shim/issues)
+For questions or feedback:
+
+- GitHub Issues: https://github.com/iflytek/Astron-xmod-shim/issues
 - Email: hxli28@iflytek.com

@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"astron-xmod-shim/internal/core/workqueue"
 	dto "astron-xmod-shim/internal/dto/deploy"
 )
 
@@ -28,6 +29,13 @@ func (m *MemoryStore) Get(serviceID string) *dto.RequirementSpec {
 // Delete 删除服务的状态记录
 func (m *MemoryStore) Delete(serviceID string) {
 	delete(m.specMap, serviceID)
+}
+
+// ReloadAll 实现Store接口的ReloadAll方法
+// 在MemoryStore实现中，此方法实际不需要任何操作
+func (m *MemoryStore) ReloadAll(queue *workqueue.Queue) {
+	// MemoryStore实现中无需特殊处理
+	// 如果需要，这里也可以添加清空队列和重新投递的逻辑
 }
 
 func (m *MemoryStore) GetStatus(id string) {
