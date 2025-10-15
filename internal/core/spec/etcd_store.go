@@ -242,7 +242,7 @@ func (e *EtcdStore) ReloadAll(queue *workqueue.Queue) {
 	}
 
 	// 2. 列出所有包含service-id标签的ConfigMap
-	labelSelector := fmt.Sprintf("app=astron-xmod-shim,resource=requirement-spec")
+	labelSelector := "app=astron-xmod-shim,resource=requirement-spec"
 	opts := metav1.ListOptions{LabelSelector: labelSelector}
 	cms, err := e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).List(context.Background(), opts)
 	if err != nil {
