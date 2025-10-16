@@ -3,7 +3,7 @@
 # Kubernetes客户端配置
 k8s:
   # kube-config文件路径（集群外必填，集群内可省略）
-  kube-config: "../../kubeconfig"
+  kube-config: "/opt/astron-xmod-shim/conf/shimlets/kubeconfig"
   # 客户端QPS限制（控制API请求频率）
   qps: 20.0
   # 突发流量允许的最大请求数（超过QPS时的缓冲）
@@ -40,7 +40,7 @@ current-shimlet: "k8s"
 # shimlet 配置
 shimlets:
   k8s:
-    config-path: "/conf/k8s-shimlet.yaml"   # 👈 指向插件配置
+    config-path: "/opt/astron-xmod-shim/conf/shimlets/k8s-shimlet.yaml"   # 👈 指向插件配置
   docker:
     config-path: "./conf/docker/docker-shimlet.yaml"
   shimmy:
