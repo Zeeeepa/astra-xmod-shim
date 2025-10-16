@@ -21,15 +21,15 @@ import (
 // 注意：这里命名为EtcdStore是为了满足需求，实际实现是基于ConfigMap的
 
 const (
-	// ConfigMapNamePrefix ConfigMap名称前缀
-	ConfigMapNamePrefix = "astron-xmod-shim-"
+	// ConfigMapName ConfigMap名称
+	ConfigMapName = "astron-xmod-shim-services"
 	// DataKey 存储数据的键名
-	DataKey = "requirement-spec"
+	DataKey = "services"
 	// ConfigMapNamespace 默认命名空间
 	ConfigMapNamespace = "default"
 )
 
-// EtcdStore 实现了Store接口，使用ConfigMap存储RequirementSpec
+// EtcdStore 实现了Store接口，使用ConfigMap存储所有RequirementSpec
 type EtcdStore struct {
 	client    *k8s.K8sClient
 	namespace string
@@ -73,6 +73,34 @@ func (e *EtcdStore) Set(serviceID string, spec *dto.RequirementSpec) {
 		}
 	}
 
+	// 获取现有的ConfigMap
+	cm, err := e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Get(
+		context.Background(),
+		ConfigMapName,
+		metav1.GetOptions{},
+	)
+
+	// 如果ConfigMap不存在，创建一个新的
+	if err != nil && k8serrors.IsNotFound(err) {
+		cm = &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      ConfigMapName,
+				Namespace: e.namespace,
+				Labels: map[string]string{
+					"app":      "astron-xmod-shim",
+					"resource": "requirement-specs",
+				},
+				Annotations: map[string]string{
+					"last-updated": time.Now().Format(time.RFC3339),
+				},
+			},
+			Data: make(map[string]string),
+		}
+	} else if err != nil {
+		log.Error("Failed to get ConfigMap: %v", err)
+		return
+	}
+
 	// 将spec序列化为JSON
 	data, err := json.Marshal(spec)
 	if err != nil {
@@ -80,71 +108,32 @@ func (e *EtcdStore) Set(serviceID string, spec *dto.RequirementSpec) {
 		return
 	}
 
-	// 构建ConfigMap名称
-	cmName := ConfigMapNamePrefix + serviceID
-
-	// 创建或更新ConfigMap
-	targetCM := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cmName,
-			Namespace: e.namespace,
-			Labels: map[string]string{
-				"app":        "astron-xmod-shim",
-				"resource":   "requirement-spec",
-				"service-id": serviceID,
-			},
-			Annotations: map[string]string{
-				"last-updated": time.Now().Format(time.RFC3339),
-			},
-		},
-		Data: map[string]string{
-			DataKey: string(data),
-		},
+	// 确保Data字段已初始化
+	if cm.Data == nil {
+		cm.Data = make(map[string]string)
 	}
 
-	// 尝试获取现有ConfigMap
-	existingCM, err := e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Get(
-		context.Background(),
-		cmName,
-		metav1.GetOptions{},
-	)
+	// 将服务规格存储在ConfigMap中，以serviceID为键
+	cm.Data[serviceID] = string(data)
+	cm.Annotations["last-updated"] = time.Now().Format(time.RFC3339)
 
-	if err != nil {
-		// 资源不存在，创建新的
-		if k8serrors.IsNotFound(err) {
-			_, err = e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Create(
-				context.Background(),
-				targetCM,
-				metav1.CreateOptions{},
-			)
-			if err != nil {
-				log.Error("Failed to create ConfigMap: %v", err)
-			}
-			return
+	// 如果是新创建的ConfigMap，则创建它
+	if cm.ResourceVersion == "" {
+		_, err = e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Create(
+			context.Background(),
+			cm,
+			metav1.CreateOptions{},
+		)
+		if err != nil {
+			log.Error("Failed to create ConfigMap: %v", err)
 		}
-		// 其他错误
-		log.Error("Failed to get ConfigMap: %v", err)
 		return
 	}
 
-	// 资源已存在，更新
-	targetCM.ResourceVersion = existingCM.ResourceVersion
-	// 保留现有标签
-	for k, v := range existingCM.Labels {
-		if _, ok := targetCM.Labels[k]; !ok {
-			targetCM.Labels[k] = v
-		}
-	}
-	// 保留现有注释
-	for k, v := range existingCM.Annotations {
-		if k != "last-updated" {
-			targetCM.Annotations[k] = v
-		}
-	}
-
+	// 否则更新现有的ConfigMap
 	_, err = e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Update(
 		context.Background(),
-		targetCM,
+		cm,
 		metav1.UpdateOptions{},
 	)
 	if err != nil {
@@ -161,13 +150,10 @@ func (e *EtcdStore) Get(serviceID string) *dto.RequirementSpec {
 		}
 	}
 
-	// 构建ConfigMap名称
-	cmName := ConfigMapNamePrefix + serviceID
-
 	// 获取ConfigMap
 	cm, err := e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Get(
 		context.Background(),
-		cmName,
+		ConfigMapName,
 		metav1.GetOptions{},
 	)
 	if err != nil {
@@ -178,10 +164,9 @@ func (e *EtcdStore) Get(serviceID string) *dto.RequirementSpec {
 		return nil
 	}
 
-	// 获取数据
-	data, ok := cm.Data[DataKey]
+	// 检查是否存在该服务的数据
+	data, ok := cm.Data[serviceID]
 	if !ok {
-		log.Error("Data not found in ConfigMap: %s", DataKey)
 		return nil
 	}
 
@@ -195,7 +180,7 @@ func (e *EtcdStore) Get(serviceID string) *dto.RequirementSpec {
 	return spec
 }
 
-// Delete 实现Store接口的Delete方法，删除对应的ConfigMap
+// Delete 实现Store接口的Delete方法，从ConfigMap中删除对应的service
 func (e *EtcdStore) Delete(serviceID string) {
 	if e.client == nil {
 		if err := e.initClient(); err != nil {
@@ -204,67 +189,41 @@ func (e *EtcdStore) Delete(serviceID string) {
 		}
 	}
 
-	// 构建ConfigMap名称
-	cmName := ConfigMapNamePrefix + serviceID
-
-	// 删除ConfigMap
-	err := e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Delete(
+	// 获取现有的ConfigMap
+	cm, err := e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Get(
 		context.Background(),
-		cmName,
-		metav1.DeleteOptions{},
+		ConfigMapName,
+		metav1.GetOptions{},
 	)
 	if err != nil {
-		if !k8serrors.IsNotFound(err) {
-			log.Error("Failed to delete ConfigMap: %v", err)
+		if k8serrors.IsNotFound(err) {
+			return
+		}
+		log.Error("Failed to get ConfigMap: %v", err)
+		return
+	}
+
+	// 删除指定服务的数据
+	if cm.Data != nil {
+		delete(cm.Data, serviceID)
+		cm.Annotations["last-updated"] = time.Now().Format(time.RFC3339)
+
+		// 更新ConfigMap
+		_, err = e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).Update(
+			context.Background(),
+			cm,
+			metav1.UpdateOptions{},
+		)
+		if err != nil {
+			log.Error("Failed to update ConfigMap: %v", err)
 		}
 	}
 }
 
 // ReloadAll 实现Store接口的ReloadAll方法
-// 功能：清空workqueue并重新投递所有ConfigMap中记录的serviceID
-// 参数：queue - 工作队列接口，用于清空和重新投递事件
+// 功能：重新投递所有ConfigMap中记录的serviceID
+// 参数：queue - 工作队列接口，用于重新投递事件
 // 特性：保证幂等性 - 无论调用多少次，最终效果相同
 func (e *EtcdStore) ReloadAll(queue *workqueue.Queue) {
-	log.Info("ReloadAll called for EtcdStore, clearing workqueue and reloading all service IDs")
 
-	// 检查客户端是否初始化
-	if e.client == nil {
-		if err := e.initClient(); err != nil {
-			log.Error("Failed to initialize client in ReloadAll: %v", err)
-			return
-		}
-	}
-
-	// 检查队列是否有效
-	if queue == nil {
-		log.Error("Queue is nil in ReloadAll")
-		return
-	}
-
-	// 2. 列出所有包含service-id标签的ConfigMap
-	labelSelector := "app=astron-xmod-shim,resource=requirement-spec"
-	opts := metav1.ListOptions{LabelSelector: labelSelector}
-	cms, err := e.client.GetClientSet().CoreV1().ConfigMaps(e.namespace).List(context.Background(), opts)
-	if err != nil {
-		log.Error("Failed to list ConfigMaps in ReloadAll: %v", err)
-		return
-	}
-
-	// 3. 重新投递所有serviceID到workqueue
-	serviceCount := 0
-	for _, cm := range cms.Items {
-		serviceID, exists := cm.Labels["service-id"]
-		if !exists {
-			log.Warn("ConfigMap %s doesn't have service-id label, skipping", cm.Name)
-			continue
-		}
-
-		// 构建事件键并添加到队列
-		eventKey := fmt.Sprintf("cm/reload/%s", serviceID)
-		queue.Add(eventKey)
-		serviceCount++
-		log.Info("Requeued service ID: %s", serviceID)
-	}
-
-	log.Info("ReloadAll completed, requeued %d service IDs", serviceCount)
 }

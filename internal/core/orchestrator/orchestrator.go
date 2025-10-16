@@ -9,7 +9,6 @@ import (
 	"astron-xmod-shim/internal/core/typereg"
 	"astron-xmod-shim/internal/core/workqueue"
 	dto "astron-xmod-shim/internal/dto/deploy"
-	"astron-xmod-shim/pkg/log"
 	"fmt"
 )
 
@@ -17,10 +16,10 @@ import (
 type CurrentShimletGetter func() string
 
 type Orchestrator struct {
-	shimReg             *typereg.TypeReg[shimlet.Shimlet]
-	goalSetReg          map[string]*goal.GoalSet
-	specStore           spec.Store
-	queue               *workqueue.Queue
+	shimReg              *typereg.TypeReg[shimlet.Shimlet]
+	goalSetReg           map[string]*goal.GoalSet
+	specStore            spec.Store
+	queue                *workqueue.Queue
 	currentShimletGetter CurrentShimletGetter
 }
 
@@ -31,10 +30,10 @@ func NewOrchestrator(
 	specStore spec.Store,
 ) *Orchestrator {
 	return &Orchestrator{
-		queue:               queue,
-		shimReg:             shimReg,
-		goalSetReg:          pipeReg,
-		specStore:           specStore,
+		queue:      queue,
+		shimReg:    shimReg,
+		goalSetReg: pipeReg,
+		specStore:  specStore,
 		currentShimletGetter: func() string {
 			return config.Get().CurrentShimlet
 		},
@@ -51,10 +50,10 @@ func NewOrchestratorWithShimletGetter(
 	currentShimletGetter CurrentShimletGetter,
 ) *Orchestrator {
 	return &Orchestrator{
-		queue:               queue,
-		shimReg:             shimReg,
-		goalSetReg:          pipeReg,
-		specStore:           specStore,
+		queue:                queue,
+		shimReg:              shimReg,
+		goalSetReg:           pipeReg,
+		specStore:            specStore,
 		currentShimletGetter: currentShimletGetter,
 	}
 }
@@ -81,25 +80,27 @@ func (o *Orchestrator) Provision(spec *dto.RequirementSpec) error {
 	return nil
 }
 
-// DeleteService 删除指定的模型服务
-func (o *Orchestrator) DeleteService(serviceID string) error {
-	// 获取当前使用的shimlet
-	currentShimletId := o.currentShimletGetter()
-	runtimeShimlet, err := o.shimReg.GetSingleton(currentShimletId)
-	if err != nil {
-		log.Error("get runtime shimlet error", err)
-		return err
-	}
-
-	// 调用shimlet的Delete方法删除资源
-	if err := runtimeShimlet.Delete(serviceID); err != nil {
-		log.Error("delete service failed", err)
-		return err
-	}
-
-	go log.Info("service deleted successfully", "serviceID", serviceID)
-	return nil
-}
+//// DeleteService 删除指定的模型服务
+//func (o *Orchestrator) DeleteService(serviceID string) error {
+//	// 获取当前使用的shimlet
+//	currentShimletId := o.currentShimletGetter()
+//
+//	runtimeShimlet, err := o.shimReg.GetSingleton(currentShimletId)
+//	if err != nil {
+//		log.Error("get runtime shimlet error", err)
+//		return err
+//	}
+//
+//	// 调用shimlet的Delete方法删除资源
+//	if err := runtimeShimlet.Delete(serviceID); err != nil {
+//		log.Error("delete service failed", err)
+//		return err
+//	}
+//	o.specStore.Delete(serviceID)
+//
+//	go log.Info("service deleted successfully", "serviceID", serviceID)
+//	return nil
+//}
 
 // GetServiceStatus 获取指定服务的状态信息
 func (o *Orchestrator) GetServiceStatus(serviceID string) (*dto.RuntimeStatus, error) {

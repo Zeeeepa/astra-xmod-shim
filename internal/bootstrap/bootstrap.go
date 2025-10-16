@@ -35,8 +35,8 @@ func Init(configPath string) error {
 	workerNum := 5
 	workQueue := workqueue.New()
 	//  init specStore - 替换MemoryStore为EtcdStore
-	//specStore := spec.NewEtcdStore()
-	specStore := spec.NewMemoryStore()
+	specStore := spec.NewEtcdStore()
+	//specStore := spec.NewMemoryStore()
 
 	rc := reconciler.NewReconciler(specStore, workerNum, workQueue)
 
