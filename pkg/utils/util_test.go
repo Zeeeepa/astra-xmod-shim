@@ -8,37 +8,36 @@ import (
 )
 
 func TestGenerateSimpleID(t *testing.T) {
-	// 测试生成简单ID
+	// Test generating simple ID
 	id1 := GenerateSimpleID()
 	id2 := GenerateSimpleID()
 
-	// 验证ID格式
+	// Verify ID format
 	assert.NotEmpty(t, id1)
 	assert.NotEmpty(t, id2)
-	assert.Len(t, id1, 8) // 应该是8个字符的十六进制字符串
+	assert.Len(t, id1, 8) // Should be 8-character hex string
 	assert.Len(t, id2, 8)
 
-	// 验证ID是唯一的（注意：由于种子基于纳秒，极短时间内可能重复，但概率极低）
-	// 若在极快循环中运行可能偶发失败，但一般测试通过
+	// Verify ID uniqueness (note: extremely low probability of collision)
 	assert.NotEqual(t, id1, id2)
 
-	// 验证ID只包含十六进制字符
+	// Verify ID contains only hex characters
 	assert.Regexp(t, "^[0-9a-f]{8}$", id1)
 	assert.Regexp(t, "^[0-9a-f]{8}$", id2)
 }
 
 func TestGenerateSimpleIDConsistency(t *testing.T) {
-	// 测试生成ID的一致性
+	// Test ID generation consistency
 	ids := make(map[string]bool)
 
-	// 生成100个ID，验证没有重复
+	// Generate 100 IDs and verify no duplicates
 	for i := 0; i < 100; i++ {
 		id := GenerateSimpleID()
 		assert.False(t, ids[id], "Generated duplicate ID: %s", id)
 		ids[id] = true
 	}
 
-	// 验证所有ID都是有效的
+	// Verify all IDs are valid
 	for id := range ids {
 		assert.Len(t, id, 8)
 		assert.Regexp(t, "^[0-9a-f]{8}$", id)
@@ -49,14 +48,28 @@ func TestIsLetter(t *testing.T) {
 	tests := []struct {
 		char     byte
 		expected bool
-	}{
-		{'a', true},
-		{'z', true},
-		{'m', true},
-		{'A', false}, // 大写字母返回false
-		{'0', false}, // 数字返回false
-		{'-', false}, // 连字符返回false
-		{'@', false}, // 特殊字符返回false
+	}{{
+			char:     'a',
+			expected: true,
+		}, {
+			char:     'z',
+			expected: true,
+		}, {
+			char:     'm',
+			expected: true,
+		}, {
+			char:     'A',
+			expected: false, // Uppercase returns false
+		}, {
+			char:     '0',
+			expected: false, // Digit returns false
+		}, {
+			char:     '-',
+			expected: false, // Hyphen returns false
+		}, {
+			char:     '@',
+			expected: false, // Special char returns false
+		},
 	}
 
 	for _, tt := range tests {
@@ -69,16 +82,34 @@ func TestIsAlnum(t *testing.T) {
 	tests := []struct {
 		char     byte
 		expected bool
-	}{
-		{'a', true},
-		{'z', true},
-		{'m', true},
-		{'0', true},  // 数字返回true
-		{'9', true},  // 数字返回true
-		{'5', true},  // 数字返回true
-		{'A', false}, // 大写字母返回false
-		{'-', false}, // 连字符返回false
-		{'@', false}, // 特殊字符返回false
+	}{{
+			char:     'a',
+			expected: true,
+		}, {
+			char:     'z',
+			expected: true,
+		}, {
+			char:     'm',
+			expected: true,
+		}, {
+			char:     '0',
+			expected: true, // Digit returns true
+		}, {
+			char:     '9',
+			expected: true, // Digit returns true
+		}, {
+			char:     '5',
+			expected: true, // Digit returns true
+		}, {
+			char:     'A',
+			expected: false, // Uppercase returns false
+		}, {
+			char:     '-',
+			expected: false, // Hyphen returns false
+		}, {
+			char:     '@',
+			expected: false, // Special char returns false
+		},
 	}
 
 	for _, tt := range tests {
@@ -88,51 +119,43 @@ func TestIsAlnum(t *testing.T) {
 }
 
 func TestModelNameToDeploymentNameEdgeCases(t *testing.T) {
-	// 测试边界情况 —— 已根据当前函数行为修正 expected
+	// Test edge cases
 	tests := []struct {
 		name      string
 		modelName string
 		expected  string
-	}{
-		{
+	}{{
 			name:      "single character (letter)",
 			modelName: "a",
-			expected:  "a", // 以字母开头 → 不加 model-
-		},
-		{
+			expected:  "a", // Starts with letter → no prefix
+		}, {
 			name:      "single digit",
 			modelName: "1",
-			expected:  "model-1", // 首字符非字母 → 加前缀
-		},
-		{
+			expected:  "model-1", // Starts with non-letter → add prefix
+		}, {
 			name:      "single special character",
 			modelName: "@",
-			expected:  "model", // 清洗后为空 → 兜底为 "model"
-		},
-		{
+			expected:  "model", // Empty after cleanup → fallback to "model"
+		}, {
 			name:      "exactly 63 characters (letter start)",
 			modelName: strings.Repeat("a", 63),
-			expected:  strings.Repeat("a", 63), // 不加前缀，正好63
-		},
-		{
+			expected:  strings.Repeat("a", 63), // No prefix, exactly 63 chars
+		}, {
 			name:      "64 characters (should be truncated)",
 			modelName: strings.Repeat("a", 64),
-			expected:  strings.Repeat("a", 63), // 截断到63
-		},
-		{
+			expected:  strings.Repeat("a", 63), // Truncate to 63 chars
+		}, {
 			name:      "exactly 63 characters starting with number",
-			modelName: "1" + strings.Repeat("a", 62),       // 63 chars
+			modelName: "1" + strings.Repeat("a", 62),
 			expected:  "model-1" + strings.Repeat("a", 56), // "model-" (6) + "1" + 56*a = 63
-		},
-		{
+		}, {
 			name:      "empty string",
 			modelName: "",
-			expected:  "model", // 函数兜底
-		},
-		{
+			expected:  "model", // Function fallback
+		}, {
 			name:      "only hyphens",
 			modelName: "-----",
-			expected:  "model", // 清洗后为空 → "model"
+			expected:  "model", // Empty after cleanup → "model"
 		},
 	}
 
@@ -142,10 +165,10 @@ func TestModelNameToDeploymentNameEdgeCases(t *testing.T) {
 			assert.Equal(t, tt.expected, result, "Input: %q", tt.modelName)
 			assert.True(t, len(result) <= 63, "Result should not exceed 63 characters")
 
-			// 验证结果只包含有效字符
+			// Verify result contains only valid characters
 			assert.Regexp(t, "^[a-z0-9-]*$", result)
 
-			// 验证不以连字符开头或结尾（函数有 trim 逻辑）
+			// Verify does not start or end with hyphen
 			if result != "" {
 				assert.False(t, strings.HasPrefix(result, "-"), "Should not start with '-'")
 				assert.False(t, strings.HasSuffix(result, "-"), "Should not end with '-'")
@@ -155,18 +178,26 @@ func TestModelNameToDeploymentNameEdgeCases(t *testing.T) {
 }
 
 func TestModelNameToDeploymentNamePerformance(t *testing.T) {
-	// 性能与合规性测试 —— 修正期望以匹配实际输出
+	// Performance and compliance tests
 	testCases := []struct {
 		modelName string
-	}{
-		{"llama"},
-		{"llama-2-7b-chat-hf"},
-		{"meta-llama/Llama-2-7b-chat-hf"},
-		{"models--meta-llama--Llama-2-7b-chat-hf"},
-		{"very-long-model-name-with-many-characters-and-special-chars-@#$%^&*()"},
-		{"1model"},
-		{"@#$%"},
-		{""},
+	}{{
+			modelName: "llama",
+		}, {
+			modelName: "llama-2-7b-chat-hf",
+		}, {
+			modelName: "meta-llama/Llama-2-7b-chat-hf",
+		}, {
+			modelName: "models--meta-llama--Llama-2-7b-chat-hf",
+		}, {
+			modelName: "very-long-model-name-with-many-characters-and-special-chars-@#$%^&*()",
+		}, {
+			modelName: "1model",
+		}, {
+			modelName: "@#$%",
+		}, {
+			modelName: "",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -175,17 +206,17 @@ func TestModelNameToDeploymentNamePerformance(t *testing.T) {
 			assert.NotEmpty(t, result)
 			assert.True(t, len(result) <= 63)
 
-			// 验证只包含小写字母、数字、连字符
+			// Verify contains only lowercase letters, numbers, and hyphens
 			assert.Regexp(t, "^[a-z0-9-]*$", result)
 
-			// 如果结果非空，必须以字母开头（K8s要求）
+			// If result is not empty, must start with a letter (K8s requirement)
 			if result != "" {
 				assert.True(t, result[0] >= 'a' && result[0] <= 'z',
 					"Result must start with a lowercase letter: %q", result)
 			}
 
-			// 不以连字符结尾
-			assert.False(t, strings.HasSuffix(result, "-"))
+			// Does not end with hyphen
+			assert.False(t, strings.HasSuffix(result, "-"), "Should not end with '-'")
 		})
 	}
 }

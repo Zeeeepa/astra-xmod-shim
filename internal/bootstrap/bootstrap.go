@@ -21,7 +21,7 @@ func Init(configPath string) error {
 
 	// init log
 	if err := log.Init(&cfg.Log); err != nil {
-		return fmt.Errorf("log configured error: %w", err) // 日志初始化失败，无法使用log输出
+		return fmt.Errorf("log configured error: %w", err) // Log initialization failed, cannot use log output
 	}
 	log.Info("log configured", "cfg: ", cfg.Log)
 
@@ -29,21 +29,21 @@ func Init(configPath string) error {
 	shimReg := shimlet.Registry
 	pipeReg := goal.Registry
 
-	// 在bootstrap阶段初始化客户端
+	// Initialize clients during bootstrap phase
 
 	// init reconciler
 	workerNum := 5
 	workQueue := workqueue.New()
-	//  init specStore - 替换MemoryStore为EtcdStore
+	// init specStore - Replace MemoryStore with EtcdStore
 	specStore := spec.NewEtcdStore()
 	//specStore := spec.NewMemoryStore()
 
 	rc := reconciler.NewReconciler(specStore, workerNum, workQueue)
 
-	// 初始化全局Tracer单例
+	// Initialize global Tracer singleton
 	infraShim, _ := shimReg.GetSingleton(cfg.CurrentShimlet)
 
-	// TODO 利用shimlet get 出服务列表
+	// TODO Use shimlet to get service list
 	_, _ = infraShim.ListDeployedServices()
 
 	// init orchestrator
@@ -54,9 +54,9 @@ func Init(configPath string) error {
 
 	specStore.ReloadAll(workQueue)
 
-	// 6. 初始化 HTTP Server
+	// 6. Initialize HTTP Server
 	if err := server.Init(); err != nil {
-		return fmt.Errorf("HTTP Server初始化失败: %w", err)
+		return fmt.Errorf("HTTP Server initialization failed: %w", err)
 	}
 
 	return nil

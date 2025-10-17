@@ -1,46 +1,43 @@
-# 应用配置文件（与conf.Config结构体映射）
-
-# Kubernetes客户端配置
+# Kubernetes client configuration
 k8s:
-  # kube-config文件路径（集群外必填，集群内可省略）
+  # Path to kube-config file (required outside cluster)
   kube-config: "/opt/astron-xmod-shim/conf/shimlets/kubeconfig"
-  # 客户端QPS限制（控制API请求频率）
+  # Client QPS limit
   qps: 20.0
-  # 突发流量允许的最大请求数（超过QPS时的缓冲）
+  # Maximum burst requests allowed
   burst: 40
-  # 请求超时时间（秒）
+  # Request timeout in seconds
   timeout: 30
 
-# HTTP服务器配置
+# HTTP server configuration
 server:
-  # 监听地址（格式：":端口" 或 "IP:端口"，默认":8080"）
+  # Listening address (format: ":port" or "IP:port")
   port: ":7777"
 
-
-# 日志配置
+# Log configuration
 log:
-  # 日志级别（debug/info/warn/error）
+  # Log level (debug/info/warn/error)
   level: "debug"
-  # 日志文件输出路径（相对或绝对路径）
+  # Log file output path
   path: "./logs/app.log"
-  # 单个日志文件最大尺寸（MB），超过则滚动生成新文件
+  # Maximum size of single log file in MB
   max-size: 100
-  # 日志文件保留天数（超过则自动清理）
+  # Log file retention days
   max-age: 7
-  # 是否压缩归档日志（节省磁盘空间）
+  # Whether to compress archived logs
   compress: false
-  # 是否在日志中显示代码行号（便于调试）
+  # Whether to show code line numbers in logs
   show-line: true
-  # 是否同时输出日志到控制台（开发环境建议开启）
+  # Whether to output logs to console
   enable-console: true
 
-# 当前生效的 shimlet
+# Currently active shimlet
 current-shimlet: "k8s"
 
-# shimlet 配置
+# Shimlet configurations
 shimlets:
   k8s:
-    config-path: "/opt/astron-xmod-shim/conf/shimlets/k8s-shimlet.yaml"   # 👈 指向插件配置
+    config-path: "/opt/astron-xmod-shim/conf/shimlets/k8s-shimlet.yaml"  # Plugin configuration path
   docker:
     config-path: "./conf/docker/docker-shimlet.yaml"
   shimmy:
@@ -49,7 +46,7 @@ shimlets:
 model-manage:
   model-root: "/mnt/maasmodels/"
 
-# 跟踪器配置
+# Tracer configuration
 tracer:
-  # 跟踪器轮询间隔（秒）
+  # Tracer polling interval in seconds
   interval: 30

@@ -4,13 +4,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Server 通用HTTP服务器
-type Server struct {
-	engine *gin.Engine // 内部维护gin引擎
+// Server Generic HTTP server
+ type Server struct {
+	engine *gin.Engine // Internal gin engine
 	addr   string
 }
 
-// NewServer 创建HTTP服务器实例
+// NewServer Create HTTP server instance
 func NewServer(addr string) *Server {
 	return &Server{
 		engine: gin.Default(),
@@ -18,12 +18,12 @@ func NewServer(addr string) *Server {
 	}
 }
 
-// GetEngine 提供引擎访问方法（修正引用问题的核心）
+// GetEngine Provide engine access method
 func (s *Server) GetEngine() *gin.Engine {
 	return s.engine
 }
 
-// Run 启动服务器
+// Run Start the server
 func (s *Server) Run() error {
 	return s.engine.Run(s.addr)
 }

@@ -8,51 +8,51 @@ import (
 	"time"
 )
 
-// GenerateSimpleID 生成一个8位的ID，不进行错误处理
+// GenerateSimpleID Generate an 8-character ID without error handling
 func GenerateSimpleID() string {
-	// 设置随机数种子（只需要设置一次）
-	// 注意：在实际项目中，通常在程序初始化时设置一次即可
+	// Set random seed (only needs to be set once)
+	// Note: In actual projects, usually set once during program initialization
 	seed := time.Now().UnixNano()
 	localRand := rand.New(rand.NewSource(seed))
 
-	// 生成4字节随机数据（hex编码后变成8位）
+	// Generate 4 bytes of random data (becomes 8 characters when hex encoded)
 	bytes := make([]byte, 4)
-	localRand.Read(bytes) // 忽略错误
+	localRand.Read(bytes) // Ignore error
 
-	// 返回8位十六进制字符串
+	// Return 8-character hex string
 	return hex.EncodeToString(bytes)
 }
 
-// ModelNameToDeploymentName 将模型名转换为 Kubernetes 兼容的 deployment 名称
+// ModelNameToDeploymentName Convert model name to Kubernetes-compatible deployment name
 func ModelNameToDeploymentName(modelName string) string {
-	// 1. 转小写
+	// 1. Convert to lowercase
 	name := strings.ToLower(modelName)
 
-	// 2. 将 . 替换为 -（或其他策略，如去除）
-	// 例如：0.6 → 0-6
+	// 2. Replace . with - (or other strategy, like removal)
+	// Example: 0.6 → 0-6
 	name = strings.ReplaceAll(name, ".", "-")
 
-	// 3. 只保留：字母、数字、-
-	// 使用正则替换非法字符
+	// 3. Keep only: letters, numbers, -
+	// Use regex to replace illegal characters
 	reg := regexp.MustCompile(`[^a-z0-9-]+`)
 	name = reg.ReplaceAllString(name, "")
 
-	// 4. 确保以字母开头
+	// 4. Ensure starts with letter
 	if len(name) == 0 || !isLetter(name[0]) {
 		name = "model-" + name
 	}
 
-	// 5. 确保以字母或数字结尾
+	// 5. Ensure ends with letter or number
 	for len(name) > 0 && !isAlnum(name[len(name)-1]) {
 		name = name[:len(name)-1]
 	}
 
-	// 6. 限制长度（63字符）
+	// 6. Limit length (63 characters)
 	if len(name) > 63 {
 		name = name[:63]
 	}
 
-	// 7. 防止全连字符或空字符串
+	// 7. Prevent all hyphens or empty string
 	if name == "" {
 		name = "model-default"
 	}
@@ -66,7 +66,7 @@ func ModelNameToDeploymentName(modelName string) string {
 	return name
 }
 
-// 工具函数
+// Utility functions
 func isLetter(b byte) bool {
 	return (b >= 'a' && b <= 'z')
 }
