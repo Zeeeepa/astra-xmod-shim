@@ -84,9 +84,12 @@ Astron-xmod-shim 也提供了 Helm Chart 部署方式，适用于 Kubernetes 环
 # 进入 Helm chart 目录
 cd deploy/helm
 
-# 安装或升级应用
-helm upgrade --install astron-xmod-shim astron-xmod-shim/ -f astron-xmod-shim/values.yaml
-
+# 安装应用
+ helm install astron-xmod-shim  ./astron-xmod-shim   --kubeconfig  ../../conf/shimlets/kubeconfig 
+# 升级应用
+ helm upgrade astron-xmod-shim  ./astron-xmod-shim   --kubeconfig  ../../conf/shimlets/kubeconfig 
+# 卸载应用
+ helm uninstall astron-xmod-shim    --kubeconfig  ../../conf/shimlets/kubeconfig 
 # 验证部署
 kubectl get pods -l app.kubernetes.io/name=astron-xmod-shim
 ```
@@ -118,37 +121,8 @@ kubectl get pods -l app.kubernetes.io/name=astron-xmod-shim
 helm uninstall astron-xmod-shim
 ```
 
-## API 参考
-
-### 部署模型服务
-
-```bash
-curl -X POST http://localhost:8080/api/v1/modserv/deploy \   
-  -H "Content-Type: application/json" \                      
-  -d '{                                                      
-    "modelName": "example-model",                         
-    "modelFile": "/path/to/model",                        
-    "resourceRequirements": {                              
-      "acceleratorType": "NVIDIA GPU",                    
-      "acceleratorCount": 1,                               
-      "cpu": "4",                                         
-      "memory": "16Gi"                                    
-    },                                                       
-    "replicaCount": 1                                       
-  }'                                                         
-```
-
-### 查询服务状态
-
-```bash
-curl http://localhost:8080/api/v1/modserv/{serviceId}
-```
-
-### 列出已加载插件
-
-```bash
-curl http://localhost:8080/api/v1/plugins
-```
+## API 参考文档
+[API参考文档](deploy/docs/api.md)
 
 ## 插件开发指南
 
@@ -162,108 +136,7 @@ Astron-xmod-shim 原生内置了 Kubernetes Shimlet，用于在 Kubernetes 环�
 Kubernetes 的资源操作（如创建 Deployment 和 Service 等）。
 
 #### 扩展示例：Docker Shimlet 实现
-
-以下是实现 Docker 环境适配插件的示例代码，用于将模型服务部署到 Docker 容器中：
-
-#### 步骤 1：实现 Shimlet 接口
-
-```go
-package dockershimlet
-
-import (
-	"astron-xmod-shim/internal/core/shimlet"
-	dto "astron-xmod-shim/internal/dto/deploy"
-	"astron-xmod-shim/pkg/log"
-	// 导入 Docker SDK 相关包
-	// "github.com/docker/docker/client"
-)
-
-// DockerShimlet 实现 Docker 环境适配插件
-type DockerShimlet struct {
-	// 这里可以添加 Docker 客户端等成员变量
-	// client *client.Client
-}
-
-// 确保 DockerShimlet 实现了 Shimlet 接口（编译期检查）
-var _ shimlet.Shimlet = (*DockerShimlet)(nil)
-
-// InitWithConfig 初始化 Docker 客户端和配置
-func (d *DockerShimlet) InitWithConfig(confPath string) error {
-	// 实现 Docker 客户端初始化逻辑
-	// 1. 解析配置文件
-	// 2. 创建 Docker 客户端连接
-	// 3. 验证连接是否成功
-	log.Info("Initializing Docker shimlet with config: %s", confPath)
-	return nil
-}
-
-// Apply 应用部署规范，创建或更新 Docker 容器
-func (d *DockerShimlet) Apply(spec *dto.RequirementSpec) error {
-	// 实现 Docker 容器创建/更新逻辑
-	// 1. 根据 spec 构建容器配置（镜像、端口映射、卷挂载等）
-	// 2. 检查容器是否已存在
-	// 3. 存在则更新，不存在则创建新容器
-	log.Info("Applying deployment spec to Docker: %s", spec.ModelName)
-	return nil
-}
-
-// Delete 删除指定的 Docker 容器资源
-func (d *DockerShimlet) Delete(resourceID string) error {
-	// 实现 Docker 容器删除逻辑
-	// 1. 根据 resourceID 查找对应的容器
-	// 2. 停止并删除容器
-	log.Info("Deleting Docker resource: %s", resourceID)
-	return nil
-}
-
-// Status 查询 Docker 容器的运行状态
-func (d *DockerShimlet) Status(resourceID string) (*dto.RuntimeStatus, error) {
-	// 实现容器状态查询逻辑
-	// 1. 根据 resourceID 查找容器
-	// 2. 获取容器状态信息
-	// 3. 构建并返回 RuntimeStatus 对象
-	log.Info("Getting status for Docker resource: %s", resourceID)
-	return &dto.RuntimeStatus{}, nil
-}
-
-// ID 返回当前 Shimlet 的唯一标识符
-func (d *DockerShimlet) ID() string {
-	// 返回固定的标识符
-	return "docker"
-}
-
-// Description 返回当前 Shimlet 的描述信息
-func (d *DockerShimlet) Description() string {
-	// 返回描述文本
-	return "Docker环境适配插件，用于在Docker容器中部署模型服务"
-}
-
-// ListDeployedServices 列出所有已部署的服务
-func (d *DockerShimlet) ListDeployedServices() ([]string, error) {
-	// 实现服务列表查询逻辑
-	// 1. 列出所有与模型服务相关的容器
-	// 2. 提取并返回服务 ID 列表
-	log.Info("Listing all deployed services in Docker")
-	return []string{}, nil
-}
-```
-
-#### 步骤 2：注册 Docker Shimlet
-
-```go
-package dockershimlet
-
-import (
-	"astron-xmod-shim/internal/core/shimlet"
-)
-
-// init 函数在插件加载时自动调用
-func init() {
-	// 注册自定义的 Docker shimlet
-	shimlet.Registry.AutoRegister(&DockerShimlet{})
-}
-```
-
+[自定义Shimlet示例](deploy/docs/shimlet-demo.md)
 
 
 ### 预定义收敛目标集合（GoalSet）
@@ -275,80 +148,6 @@ GoalSet 定义了模型部署的具体目标和执行逻辑。Astron-xmod-shim �
 Astron-xmod-shim 原生内置了 OpenSourceLLM GoalSet，用于开源大模型的部署流程。它采用 Builder
 模式实现，包含模型路径映射、部署完成验证、规格一致性检查和服务暴露等关键目标，使用户能够快速部署开源大模型服务。
 
-#### 步骤 1：定义 Goal
-
-```go
-package mygoalset
-
-import (
-	"astron-xmod-shim/internal/core/goal"
-	"astron-xmod-shim/pkg/log"
-)
-
-// 定义一个验证模型的 Goal
-var validateModel = goal.Goal{
-	Name: "validate-model",
-	IsAchieved: func(ctx *goal.Context) bool {
-		// 检查目标是否已达成
-		return ctx.DeploySpec.ModelName != ""
-	},
-	Ensure: func(ctx *goal.Context) error {
-		log.Info("开始验证模型: %s", ctx.DeploySpec.ModelName)
-		// 实现模型验证逻辑
-		return nil
-	},
-}
-
-// 定义一个准备资源的 Goal
-var prepareResources = goal.Goal{
-	Name: "prepare-resources",
-	IsAchieved: func(ctx *goal.Context) bool {
-		// 检查资源是否已准备好
-		// 这里可以检查模型文件、配置等是否存在
-		resourceReady, exists := ctx.Get("resourceReady").(bool)
-		return exists && resourceReady
-	},
-	Ensure: func(ctx *goal.Context) error {
-		log.Info("准备部署资源")
-		// 实现资源准备逻辑
-		// 准备完成后设置标记
-		ctx.Set("resourceReady", true)
-		return nil
-	},
-}
-```
-
-#### 步骤 2：创建并注册 GoalSet
-
-```go
-package mygoalset
-
-import (
-	"astron-xmod-shim/internal/core/goal"
-	"time"
-)
-
-// init 函数在插件加载时自动调用
-func init() {
-	// 使用 Builder 模式创建并注册自定义 GoalSet
-	newMyGoalSet()
-}
-
-// newMyGoalSet 创建自定义 GoalSet 实例
-func newMyGoalSet() {
-	goal.NewGoalSetBuilder("my-goalset").
-		AddGoal(validateModel).
-		AddGoal(prepareResources).
-		WithMaxRetries(3).           // 失败最多重试 3 次
-		WithTimeout(2 * time.Minute). // 整体超时 2 分钟
-		BuildAndRegister()
-}
-```
-
-### 扩展示例：Docker Shimlet
-
-除了内置的Kubernetes Shimlet外，开发者还可以实现Docker环境适配插件，将模型服务部署到Docker容器中。Docker Shimlet通过Docker
-API创建和管理容器，支持模型服务的完整生命周期管理。
 
 ### 扩展示例：业务场景 GoalSet
 
@@ -358,85 +157,14 @@ API创建和管理容器，支持模型服务的完整生命周期管理。
 - **边缘部署GoalSet**：添加资源限制检查、模型量化优化、离线推理支持等特殊目标
 - **企业级安全GoalSet**：集成身份验证、加密传输、访问控制等安全增强目标
 
-### 插件集成方式
+[自定义GoalSet示例](deploy/docs/goalset-demo.md)
 
-Astron-xmod-shim 使用 Go 语言的初始化注册机制实现插件集成，而不是通过共享库编译和热加载。
 
-#### 内置插件集成
-
-内置插件（如 Kubernetes Shimlet）通过在 `init()` 函数中自动注册到框架中：
-
-```go
-// K8sShimlet 的注册方式示例
-func init() {
-shimlet.Registry.AutoRegister(&K8sShimlet{})
-}
-```
-
-#### 自定义插件集成
-
-自定义插件可以通过以下方式集成到 Astron-xmod-shim 中：
-
-1. **实现标准接口**：按照文档中示例实现 `Shimlet` 或创建 `GoalSet`
-2. **自动注册**：在 `init()` 函数中使用注册表完成自动注册
-3. **重新编译**：将自定义插件代码放在正确的包路径下，然后重新编译整个应用程序
-
-#### 插件选择与配置
-
-通过命令行参数或配置文件指定要使用的插件：
-
-```bash
-# 通过命令行指定插件
-./model-serve-shim --shimlet=k8s --goalset=opensource-llm-deploy
-
-# 通过配置文件指定插件
-# config.yaml 中设置
-defaultShimlet: k8s
-defaultGoalSet: opensource-llm-deploy
-```
-
-## 配置说明
+## 配置文件结构说明
 
 Astron-xmod-shim 支持通过命令行参数和配置文件进行配置：
+[配置文件整体说明](deploy/docs/conf.md)
 
-### 命令行参数
-
-```bash
-./model-serve-shim --help
-
-Usage of model-serve-shim:
-  --port int              服务监听端口 (默认: 8080)
-  --config string         配置文件路径
-  --shimlet string        默认加载的 shimlet 插件
-  --goalset string        默认加载的 goalset 插件
-  --plugin-dir string     插件目录路径
-  --log-level string      日志级别 (debug, info, warn, error) (默认: "info")
-```
-
-### 配置文件
-
-配置文件采用 YAML 格式：
-
-```yaml
-# config.yaml
-service:
-  port: 8080
-  readTimeout: 30s
-  writeTimeout: 30s
-
-plugins:
-  defaultShimlet: k8s
-  defaultGoalSet: opensource-llm-deploy
-  pluginDir: ./plugins
-  preload:
-    - type: shimlet
-      path: ./plugins/myshimlet.so
-
-logging:
-  level: info
-  format: text
-  output: stdout
-```
 
 ## 贡献指南
 
