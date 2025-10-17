@@ -1,6 +1,6 @@
 package dto
 
-// GlobalConfig 应用主配置结构体，显式添加mapstructure标签
+// GlobalConfig Application main config structure with explicit mapstructure tags
 type GlobalConfig struct {
 	K8s            K8sConfig                `yaml:"k8s" mapstructure:"k8s"`
 	Server         Server                   `yaml:"server" mapstructure:"server"`
@@ -10,7 +10,7 @@ type GlobalConfig struct {
 	ModelManage    ModelManageConfig        `yaml:"model-manage" mapstructure:"model-manage"`
 }
 
-// K8sConfig Kubernetes客户端配置
+// K8sConfig Kubernetes client configuration
 type K8sConfig struct {
 	Kubeconfig string  `yaml:"kube-config" mapstructure:"kube-config"`
 	Context    string  `yaml:"context" mapstructure:"context"`
@@ -19,12 +19,12 @@ type K8sConfig struct {
 	Timeout    int64   `yaml:"timeout" mapstructure:"timeout"`
 }
 
-// Server HTTP服务器配置
+// Server HTTP server configuration
 type Server struct {
 	Port string `yaml:"port" mapstructure:"port"`
 }
 
-// LogConfig 日志配置
+// LogConfig Log configuration
 type LogConfig struct {
 	Level         string `yaml:"level" mapstructure:"level"`
 	Path          string `yaml:"path" mapstructure:"path"`
@@ -35,12 +35,12 @@ type LogConfig struct {
 	EnableConsole bool   `yaml:"enable-console" mapstructure:"enable-console"`
 }
 
-// ShimletConfig 插件配置（动态）
+// ShimletConfig Plugin configuration (dynamic)
 type ShimletConfig struct {
 	ConfigPath string `yaml:"config-path" mapstructure:"config-path"`
 }
 
-// ModelManageConfig 模型管理配置
+// ModelManageConfig Model management configuration
 type ModelManageConfig struct {
 	ModelRoot string `yaml:"model-root" mapstructure:"model-root"`
 }

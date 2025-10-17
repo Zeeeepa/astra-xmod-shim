@@ -17,12 +17,12 @@ var (
 	configPath   string
 )
 
-// SetConfigPath 提前设置配置文件路径
+// SetConfigPath Set config file path in advance
 func SetConfigPath(path string) {
 	configPath = path
 }
 
-// Get 懒加载获取配置实例（线程安全）
+// Get Lazily load config instance (thread-safe)
 func Get() *confSpec.GlobalConfig {
 	once.Do(func() {
 		if configPath == "" {
@@ -35,56 +35,56 @@ func Get() *confSpec.GlobalConfig {
 		v.SetConfigType("yaml")
 
 		if err := v.ReadInConfig(); err != nil {
-			initErr = fmt.Errorf("读取配置文件失败: %w", err)
+			initErr = fmt.Errorf("failed to read config file: %w", err)
 			return
 		}
 
 		globalConfig = &confSpec.GlobalConfig{}
 		if err := v.Unmarshal(globalConfig); err != nil {
-			initErr = fmt.Errorf("解析配置失败: %w", err)
+			initErr = fmt.Errorf("failed to parse config: %w", err)
 			globalConfig = nil
 			return
 		}
 	})
 
-	// 加载失败也返回 nil，符合预期
+	// Return nil if loading failed, as expected
 	if initErr != nil {
-		// 可选：打印错误日志，或通过其他方式暴露 initErr
-		// log.Printf("配置加载失败: %v", initErr)
+		// Optional: Print error log or expose initErr through other means
+		// log.Printf("config loading failed: %v", initErr)
 		return nil
 	}
 
 	return globalConfig
 }
 
-// GetConfFromFileDir 从指定文件路径加载特定类型的配置
-// 支持加载YAML格式的配置文件
-// configPath: 配置文件的完整路径
-// 返回加载后的配置实例
+// GetConfFromFileDir Load specific type of config from specified file path
+// Supports loading YAML format config files
+// configPath: Full path to config file
+// Returns loaded config instance
 func GetConfFromFileDir[T any](configPath string) (*T, error) {
-	// 创建T类型的新实例并获取其指针
+	// Create new instance of T and get its pointer
 	conf := new(T)
-	// 检查文件是否存在
+	// Check if file exists
 	stat, err := os.Stat(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("配置文件不存在: %w", err)
+		return nil, fmt.Errorf("config file does not exist: %w", err)
 	}
 	if stat.IsDir() {
-		return nil, fmt.Errorf("路径不是文件: %s", configPath)
+		return nil, fmt.Errorf("path is not a file: %s", configPath)
 	}
 
 	v := viper.New()
 	v.SetConfigFile(configPath)
 	v.SetConfigType("yaml")
 
-	// 读取配置文件
+	// Read config file
 	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("读取配置文件失败: %w", err)
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	// 将配置解析到新创建的结构体指针中
+	// Parse config into newly created struct pointer
 	if err := v.Unmarshal(conf); err != nil {
-		return nil, fmt.Errorf("解析配置到结构体失败: %w", err)
+		return nil, fmt.Errorf("failed to parse config into struct: %w", err)
 	}
 
 	return conf, nil

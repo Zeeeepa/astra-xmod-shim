@@ -10,26 +10,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Init 启动HttpServer
+// Init Start HTTP server
 func Init() error {
 
-	gin.SetMode(gin.ReleaseMode) // 放在初始化 Engine 之前
-	// 2. 后续按需获取配置（首次调用Get()时完整初始化）
+	gin.SetMode(gin.ReleaseMode) // Set before initializing Engine
+	// 2. Get config on demand later (complete initialization on first Get() call)
 	globalCfg := config.Get()
-	log.Info("HTTP服务器地址端口%v", globalCfg.Server.Port)
+	log.Info("HTTP server address and port %v", globalCfg.Server.Port)
 
-	// 3. 初始化通用HTTP服务器
+	// 3. Initialize generic HTTP server
 	httpServer := http.NewServer(globalCfg.Server.Port)
 
-	// 注册业务路由
+	// Register business routes
 	route.RegisterRoutes(httpServer)
 
-	// 注册日志中间件
+	// Register logging middleware
 	engine := httpServer.GetEngine()
 	engine.Use(middleware.Logging())
 
-	log.Info("HTTP服务器初始化完毕")
+	log.Info("HTTP server initialized")
 
-	// 启动服务器
+	// Start server
 	return httpServer.Run()
 }

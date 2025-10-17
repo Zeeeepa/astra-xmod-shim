@@ -2,7 +2,7 @@ package main
 
 import (
 	"astron-xmod-shim/internal/bootstrap"
-	_ "astron-xmod-shim/internal/core/shimlet/shimlets" // 显式导入插件依赖包
+	_ "astron-xmod-shim/internal/core/shimlet/shimlets" // Explicitly import plugin dependencies
 	"log"
 	"os"
 
@@ -18,38 +18,38 @@ func main() {
 		RunE:  runMw,
 	}
 
-	// 注册配置文件参数
+	// Register config file parameter
 	rootCmd.Flags().StringVarP(
 		&configPath,
 		"config", "c",
 		"conf/base/conf.yaml",
-		"配置文件路径",
+		"Config file path",
 	)
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf("启动失败: %v", err)
+		log.Fatalf("Startup failed: %v", err)
 	}
 }
 
-// runMw 启动中间件和注册退出钩子
+// runMw Start middleware and register shutdown hooks
 func runMw(cmd *cobra.Command, args []string) error {
-	// 1. 验证配置文件
+	// 1. Validate config file
 	if err := validateConfigFile(configPath); err != nil {
 		return err
 	}
 	log.Printf("use cfg from: %s", configPath)
 
-	// 2. bootstrap
+	// 2. Bootstrap
 	if err := bootstrap.Init(configPath); err != nil {
 		return err
 	}
 
-	// 3. 阻塞等待退出信号
+	// 3. Block and wait for shutdown signal
 	waitForShutdownSignal()
 	return nil
 }
 
-// validateConfigFile 验证配置文件是否存在
+// validateConfigFile Verify config file exists
 func validateConfigFile(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return err
@@ -57,9 +57,9 @@ func validateConfigFile(path string) error {
 	return nil
 }
 
-// waitForShutdownSignal 阻塞等待退出信号
+// waitForShutdownSignal Block and wait for shutdown signal
 func waitForShutdownSignal() {
-	// 等待析构 waitGroup 完毕回调
+	// Wait for destructor waitGroup to complete callback
 	bootstrap.WaitForShutDown()
 	log.Println("receive shutdown signal waiting for resource release...")
 }

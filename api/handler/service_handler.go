@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// DeleteServiceResponse 删除服务响应结构体
+// DeleteServiceResponse Delete service response structure
 type DeleteServiceResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -20,13 +20,13 @@ type DeleteServiceResponse struct {
 	} `json:"data"`
 }
 
-// GetServiceStatusResponse 获取服务状态响应结构体
+// GetServiceStatusResponse Get service status response structure
 type GetServiceStatusResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
 		ServiceID  string `json:"serviceId"`
-		Status     string `json:"status"`   // 运行中/阻塞中/失败/初始化中/不存在/停止中
+		Status     string `json:"status"`   // Running/Blocked/Failed/Initializing/NotExists/Stopping
 		Endpoint   string `json:"endpoint"` // openai like endpoint
 		UpdateTime string `json:"updateTime"`
 	} `json:"data"`
@@ -35,10 +35,10 @@ type GetServiceStatusResponse struct {
 func DoDeploy(c *gin.Context) {
 	var depSpec *dto.RequirementSpec
 	if err := c.ShouldBindJSON(&depSpec); err != nil {
-		log.Error("解析策略请求失败: %v", err)
+		log.Error("Failed to parse strategy request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Code":    http.StatusBadRequest,
-			"Message": "无效的请求参数: " + err.Error(),
+			"Message": "Invalid request parameters: " + err.Error(),
 		})
 		return
 	}
@@ -61,9 +61,9 @@ func DoDeploy(c *gin.Context) {
 	})
 }
 
-// GetServiceStatus 处理获取模型服务状态的请求
+// GetServiceStatus Handle request to get model service status
 func GetServiceStatus(c *gin.Context) {
-	// 从URL路径中获取serviceId
+	// Get serviceId from URL path
 	serviceID := c.Param("serviceId")
 
 	if serviceID == "" {
@@ -78,7 +78,7 @@ func GetServiceStatus(c *gin.Context) {
 
 	log.Info("Getting service status", "serviceID", serviceID)
 
-	// 调用orchestrator获取服务状态
+	// Call orchestrator to get service status
 	status, err := orchestrator.GlobalOrchestrator.GetServiceStatus(serviceID)
 	if err != nil {
 		log.Error("Get service status failed", "error", err)
@@ -96,12 +96,12 @@ func GetServiceStatus(c *gin.Context) {
 		return
 	}
 
-	// 构建OpenAI风格的endpoint（实际应该从K8s服务或配置中获取）
+	// Build OpenAI-style endpoint (should actually get from K8s service or configuration)
 
-	// 获取当前时间
+	// Get current time
 	updateTime := time.Now().Format("2006-01-02 15:04:05")
 
-	// 返回成功响应
+	// Return successful response
 	response := GetServiceStatusResponse{
 		Code:    0,
 		Message: "success",
@@ -115,9 +115,9 @@ func GetServiceStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// DeleteService 处理删除模型服务的请求
+// DeleteService Handle request to delete model service
 func DeleteService(c *gin.Context) {
-	// 从URL路径中获取serviceId
+	// Get serviceId from URL path
 	serviceID := c.Param("serviceId")
 
 	if serviceID == "" {
@@ -148,7 +148,7 @@ func DeleteService(c *gin.Context) {
 		return
 	}
 
-	// 返回成功响应
+	// Return successful response
 	response := DeleteServiceResponse{
 		Code:    0,
 		Message: "delete submit success",
@@ -159,9 +159,9 @@ func DeleteService(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// UpdateService 处理更新模型服务的请求
+// UpdateService Handle request to update model service
 func UpdateService(c *gin.Context) {
-	// 从URL路径中获取serviceId
+	// Get serviceId from URL path
 	serviceID := c.Param("serviceId")
 
 	if serviceID == "" {
@@ -175,20 +175,20 @@ func UpdateService(c *gin.Context) {
 
 	var depSpec *dto.RequirementSpec
 	if err := c.ShouldBindJSON(&depSpec); err != nil {
-		log.Error("解析策略请求失败: %v", err)
+		log.Error("Failed to parse strategy request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    1,
-			"message": "无效的请求参数: " + err.Error(),
+			"message": "Invalid request parameters: " + err.Error(),
 		})
 		return
 	}
 
-	// 使用URL中的serviceId，而不是生成新的
+	// Use serviceId from URL instead of generating new
 	depSpec.ServiceId = serviceID
 
 	log.Info("Updating service", "serviceID", serviceID)
 	depSpec.GoalSetName = "opensource-llm-deploy"
-	// 复用部署逻辑进行更新
+	// Reuse deployment logic for update
 	err := orchestrator.GlobalOrchestrator.Provision(depSpec)
 	if err != nil {
 		log.Error("Update service failed", "error", err)
