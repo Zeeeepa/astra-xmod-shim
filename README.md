@@ -67,7 +67,6 @@ Astron-xmod-shim 采用“核心引擎 + 双插件”的解耦架构，通过抽
 - Go 1.24+（开发环境）
 - 目标环境（如 K8s v1.19+，如需使用 K8s shimlet）
 
-
 ### Helm部署
 
 Astron-xmod-shim 也提供了 Helm Chart 部署方式，适用于 Kubernetes 环境。
@@ -77,6 +76,7 @@ Astron-xmod-shim 也提供了 Helm Chart 部署方式，适用于 Kubernetes 环
 - 已安装 Helm 3.x
 - 已配置 kubectl 连接到目标 Kubernetes 集群
 - 主机上已存在配置目录和模型目录
+- [关于模型目录挂载的详细说明](deploy/docs/filesystem.md)
 
 #### 部署命令
 
@@ -122,6 +122,7 @@ helm uninstall astron-xmod-shim
 ```
 
 ## API 参考文档
+
 [API参考文档](deploy/docs/api.md)
 
 ## 插件开发指南
@@ -132,12 +133,13 @@ Shimlet 负责将抽象的部署请求转换为具体环境的操作。以下是
 
 #### 内置示例：Kubernetes Shimlet
 
-Astron-xmod-shim 原生内置了 Kubernetes Shimlet，用于在 Kubernetes 环境中部署模型服务。它实现了标准的 Shimlet 接口，能够将抽象部署请求转换为
+Astron-xmod-shim 原生内置了 Kubernetes Shimlet，用于在 Kubernetes 环境中部署模型服务。它实现了标准的 Shimlet
+接口，能够将抽象部署请求转换为
 Kubernetes 的资源操作（如创建 Deployment 和 Service 等）。
 
 #### 扩展示例：Docker Shimlet 实现
-[自定义Shimlet示例](deploy/docs/shimlet-demo.md)
 
+[自定义Shimlet示例](deploy/docs/shimlet-demo.md)
 
 ### 预定义收敛目标集合（GoalSet）
 
@@ -147,7 +149,6 @@ GoalSet 定义了模型部署的具体目标和执行逻辑。Astron-xmod-shim �
 
 Astron-xmod-shim 原生内置了 OpenSourceLLM GoalSet，用于开源大模型的部署流程。它采用 Builder
 模式实现，包含模型路径映射、部署完成验证、规格一致性检查和服务暴露等关键目标，使用户能够快速部署开源大模型服务。
-
 
 ### 扩展示例：业务场景 GoalSet
 
@@ -159,12 +160,10 @@ Astron-xmod-shim 原生内置了 OpenSourceLLM GoalSet，用于开源大模型�
 
 [自定义GoalSet示例](deploy/docs/goalset-demo.md)
 
-
 ## 配置文件结构说明
 
 Astron-xmod-shim 支持通过命令行参数和配置文件进行配置：
 [配置文件整体说明](deploy/docs/conf.md)
-
 
 ## 贡献指南
 
@@ -178,8 +177,7 @@ Astron-xmod-shim 支持通过命令行参数和配置文件进行配置：
 ## 🌟 Star 历史
 
 <div align="center">
-  <img src="https://api.star-history.com/svg?repos=iflytek/Astron-xmod-shim
-&type=Date" alt="Star History Chart" width="600">
+  <img src="https://api.star-history.com/svg?repos=iflytek/Astron-xmod-shim&type=Date" alt="Star History Chart" width="600">
 </div>
 
 ## 许可证
