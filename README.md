@@ -178,8 +178,7 @@ Astron-xmod-shim 支持通过命令行参数和配置文件进行配置：
 ## 🌟 Star 历史
 
 <div align="center">
-  <img src="https://api.star-history.com/svg?repos=iflytek/Astron-xmod-shim
-&type=Date" alt="Star History Chart" width="600">
+  <img src="https://api.star-history.com/svg?repos=iflytek/Astron-xmod-shim&type=Date" alt="Star History Chart" width="600">
 </div>
 
 ## 许可证
